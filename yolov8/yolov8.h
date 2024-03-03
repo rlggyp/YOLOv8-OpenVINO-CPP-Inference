@@ -20,14 +20,14 @@ struct Detection {
 class Inference {
  public:
 	Inference() {}
-	Inference(const std::string &model_path, const short &width, const short &height);
+	Inference(const std::string &model_path);
 
 	std::vector<Detection> RunInference(const cv::Mat &frame);
 
  private:
 	void InitialModel(const std::string &model_path);
 	void Preprocessing(const cv::Mat &frame);
-	void PostProcessing(const float *detections, const ov::Shape &output_shape);
+	void PostProcessing();
 	cv::Rect GetBoundingBox(const cv::Rect &src);
 
 	cv::Mat resized_frame_;

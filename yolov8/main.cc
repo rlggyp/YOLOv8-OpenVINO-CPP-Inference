@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	yolov8::Inference inference(model_path, 640, 640);
+	yolov8::Inference inference(model_path);
 	std::vector<yolov8::Detection> detections = inference.RunInference(image);
 
 	DrawDetectedObject(image, detections);

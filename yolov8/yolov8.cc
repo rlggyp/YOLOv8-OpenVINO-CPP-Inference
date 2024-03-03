@@ -3,10 +3,9 @@
 #include <memory>
 
 namespace yolov8 {
-Inference::Inference(const std::string &model_path, const short &width, const short &height) {
+Inference::Inference(const std::string &model_path) {
 	model_score_threshold_ = 0.48;
 	model_NMS_threshold_ = 0.48;
-	model_input_shape_ = cv::Size2f(height, width);
 	InitialModel(model_path);
 }
 
@@ -23,17 +22,18 @@ void Inference::InitialModel(const std::string &model_path) {
   model = ppp.build();
 	compiled_model_ = core.compile_model(model, "CPU");
 	inference_request_ = compiled_model_.create_infer_request();
+
+  const std::vector<ov::Output<ov::Node>> inputs = model->inputs();
+  const ov::Shape shape = inputs[0].get_shape();
+
+	const short height = shape[1];
+	const short width = shape[2];
+	model_input_shape_ = cv::Size2f(width, height);
 }
 
 std::vector<Detection> Inference::RunInference(const cv::Mat &frame) {
 	Preprocessing(frame);
-	inference_request_.infer();
-
-	const ov::Tensor &output_tensor = inference_request_.get_output_tensor();
-	ov::Shape output_shape = output_tensor.get_shape();
-	float *detections = output_tensor.data<float>();
-
-	PostProcessing(detections, output_shape);
+	PostProcessing();
 
 	return detections_;
 }
@@ -49,7 +49,13 @@ void Inference::Preprocessing(const cv::Mat &frame) {
 	inference_request_.set_input_tensor(input_tensor_);
 }
 
-void Inference::PostProcessing(const float *detections, const ov::Shape &output_shape) {
+void Inference::PostProcessing() {
+	inference_request_.infer();
+
+	const ov::Tensor &output_tensor = inference_request_.get_output_tensor();
+	const ov::Shape output_shape = output_tensor.get_shape();
+	float *detections = output_tensor.data<float>();
+
 	std::vector<int> class_list;
 	std::vector<float> confidence_list;
 	std::vector<cv::Rect> box_list;
@@ -59,7 +65,7 @@ void Inference::PostProcessing(const float *detections, const ov::Shape &output_
 	const cv::Mat detection_outputs(output_rows, output_cols, CV_32F, (float *)detections);
 
 	for (int i = 0; i < detection_outputs.cols; ++i) {
-		const cv::Mat classes_scores = detection_outputs.col(i).rowRange(4, detection_outputs.rows);
+		const cv::Mat classes_scores = detection_outputs.col(i).rowRange(4, output_rows);
 
 		cv::Point class_id;
 		double score;
