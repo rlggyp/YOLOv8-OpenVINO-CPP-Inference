@@ -1,4 +1,4 @@
-#include "yolov8.h"
+#include "inference.h"
 
 #include <memory>
 
@@ -24,15 +24,23 @@ void Inference::InitialModel(const std::string &model_path) {
 	inference_request_ = compiled_model_.create_infer_request();
 
   const std::vector<ov::Output<ov::Node>> inputs = model->inputs();
-  const ov::Shape shape = inputs[0].get_shape();
+  const ov::Shape input_shape = inputs[0].get_shape();
 
-	const short height = shape[1];
-	const short width = shape[2];
+	short height = input_shape[1];
+	short width = input_shape[2];
 	model_input_shape_ = cv::Size2f(width, height);
+
+  const std::vector<ov::Output<ov::Node>> outputs = model->outputs();
+  const ov::Shape output_shape = outputs[0].get_shape();
+
+	height = output_shape[1];
+	width = output_shape[2];
+	model_output_shape_ = cv::Size(width, height);
 }
 
 std::vector<Detection> Inference::RunInference(const cv::Mat &frame) {
 	Preprocessing(frame);
+	inference_request_.infer();
 	PostProcessing();
 
 	return detections_;
@@ -50,22 +58,15 @@ void Inference::Preprocessing(const cv::Mat &frame) {
 }
 
 void Inference::PostProcessing() {
-	inference_request_.infer();
-
-	const ov::Tensor &output_tensor = inference_request_.get_output_tensor();
-	const ov::Shape output_shape = output_tensor.get_shape();
-	float *detections = output_tensor.data<float>();
-
 	std::vector<int> class_list;
 	std::vector<float> confidence_list;
 	std::vector<cv::Rect> box_list;
 
-	const int output_rows = output_shape[1];
-	const int output_cols = output_shape[2];
-	const cv::Mat detection_outputs(output_rows, output_cols, CV_32F, (float *)detections);
+	float *detections = inference_request_.get_output_tensor().data<float>();
+	const cv::Mat detection_outputs(model_output_shape_, CV_32F, (float *)detections);
 
 	for (int i = 0; i < detection_outputs.cols; ++i) {
-		const cv::Mat classes_scores = detection_outputs.col(i).rowRange(4, output_rows);
+		const cv::Mat classes_scores = detection_outputs.col(i).rowRange(4, detection_outputs.rows);
 
 		cv::Point class_id;
 		double score;

@@ -33,6 +33,7 @@ class Inference {
 	cv::Mat resized_frame_;
 	cv::Point2f factor_;
 	cv::Size2f model_input_shape_;
+	cv::Size model_output_shape_;
 
 	ov::Tensor input_tensor_;
 	ov::InferRequest inference_request_;

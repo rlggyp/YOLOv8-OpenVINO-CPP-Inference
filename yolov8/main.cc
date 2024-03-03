@@ -1,4 +1,4 @@
-#include "yolov8.h"
+#include "inference.h"
 
 #include <random>
 
