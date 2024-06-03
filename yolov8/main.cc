@@ -20,7 +20,10 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	yolov8::Inference inference(model_path);
+	float score_threshold = 0.5;
+	float NMS_threshold = 0.5;
+
+	yolov8::Inference inference(model_path, score_threshold, NMS_threshold);
 	std::vector<yolov8::Detection> detections = inference.RunInference(image);
 
 	DrawDetectedObject(image, detections);
