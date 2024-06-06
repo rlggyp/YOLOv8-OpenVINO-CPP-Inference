@@ -5,7 +5,7 @@
 void DrawDetectedObject(cv::Mat &frame, const std::vector<yolov8::Detection> &detections);
 
 int main(int argc, char **argv) {
-	if (argc < 3) {
+	if (argc != 3) {
 		std::cerr << "usage: " << argv[0] << " <model_path> <image_path>" << std::endl;
 		return 1;
 	}
@@ -20,8 +20,8 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	float score_threshold = 0.5;
-	float NMS_threshold = 0.5;
+	const float score_threshold = 0.5;
+	const float NMS_threshold = 0.5;
 
 	yolov8::Inference inference(model_path, score_threshold, NMS_threshold);
 	std::vector<yolov8::Detection> detections = inference.RunInference(image);
@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
 	DrawDetectedObject(image, detections);
 	imshow("result", image);
 
-	char escape_key = 27;
+	const char escape_key = 27;
 
 	while (cv::waitKey(0) != escape_key);
 

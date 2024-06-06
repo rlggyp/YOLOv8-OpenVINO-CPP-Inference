@@ -8,8 +8,6 @@ find_package(OpenCV REQUIRED)
 include_directories(
 	${OpenCV_INCLUDE_DIRS}
 	/opt/intel/openvino/runtime/include
-	/opt/intel/openvino/runtime/include/ie
-	/opt/intel/openvino/runtime/include/ngraph
 )
 
 add_executable(${PROJECT_NAME} 

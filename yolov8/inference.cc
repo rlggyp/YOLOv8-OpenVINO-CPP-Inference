@@ -4,7 +4,7 @@
 
 namespace yolov8 {
 Inference::Inference(const std::string &model_path, const float &score_threshold, const float &NMS_threshold) {
-	model_input_shape_ = cv::Size(640, 640); // set default input shape, prevent error when using model with dynamic input shape
+	model_input_shape_ = cv::Size(640, 640); // Set the default input shape, prevent error when model with dynamic input shape
 	model_score_threshold_ = score_threshold;
 	model_NMS_threshold_ = NMS_threshold;
 	InitialModel(model_path);
@@ -18,29 +18,12 @@ Inference::Inference(const std::string &model_path, const cv::Size &input_shape,
 }
 
 void Inference::InitialModel(const std::string &model_path) {
-	ov::Core core;
+ov::Core core;
 	std::shared_ptr<ov::Model> model = core.read_model(model_path);
-
-	short width, height;
 
 	if (model->is_dynamic()) {
 		model->reshape({1, 3, static_cast<long int>(model_input_shape_.height), static_cast<long int>(model_input_shape_.width)});
-	} else {
-		// get input shape from model
-  	const std::vector<ov::Output<ov::Node>> inputs = model->inputs();
-  	const ov::Shape input_shape = inputs[0].get_shape();
-
-		height = input_shape[1];
-		width = input_shape[2];
-		model_input_shape_ = cv::Size2f(width, height);
 	}
-
-  const std::vector<ov::Output<ov::Node>> outputs = model->outputs();
-  const ov::Shape output_shape = outputs[0].get_shape();
-
-	height = output_shape[1];
-	width = output_shape[2];
-	model_output_shape_ = cv::Size(width, height);
 
 	ov::preprocess::PrePostProcessor ppp = ov::preprocess::PrePostProcessor(model);
 
@@ -52,6 +35,22 @@ void Inference::InitialModel(const std::string &model_path) {
   model = ppp.build();
 	compiled_model_ = core.compile_model(model, "AUTO");
 	inference_request_ = compiled_model_.create_infer_request();
+
+	short width, height;
+
+  const std::vector<ov::Output<ov::Node>> inputs = model->inputs();
+  const ov::Shape input_shape = inputs[0].get_shape();
+
+	height = input_shape[1];
+	width = input_shape[2];
+	model_input_shape_ = cv::Size2f(width, height);
+
+  const std::vector<ov::Output<ov::Node>> outputs = model->outputs();
+  const ov::Shape output_shape = outputs[0].get_shape();
+
+	height = output_shape[1];
+	width = output_shape[2];
+	model_output_shape_ = cv::Size(width, height);
 }
 
 std::vector<Detection> Inference::RunInference(const cv::Mat &frame) {
