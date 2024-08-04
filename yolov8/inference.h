@@ -1,15 +1,13 @@
-#ifndef YOLOV8_INFERENCE_H_
-#define YOLOV8_INFERENCE_H_
+#ifndef YOLO_INFERENCE_H_
+#define YOLO_INFERENCE_H_
 
 #include <string>
 #include <vector>
-
-#include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
 #include <openvino/openvino.hpp>
 
-namespace yolov8 {
+namespace yolo {
+
 struct Detection {
 	short class_id;
 	float confidence;
@@ -19,31 +17,43 @@ struct Detection {
 class Inference {
  public:
 	Inference() {}
-	Inference(const std::string &model_path, const float &score_threshold, const float &NMS_threshold);
-	Inference(const std::string &model_path, const cv::Size &input_shape, const float &score_threshold, const float &NMS_threshold);
+	// Constructor to initialize the model with default input shape
+	Inference(const std::string &model_path, const float &model_confidence_threshold, const float &model_NMS_threshold);
+	// Constructor to initialize the model with specified input shape
+	Inference(const std::string &model_path, const cv::Size model_input_shape, const float &model_confidence_threshold, const float &model_NMS_threshold);
 
-	std::vector<Detection> RunInference(const cv::Mat &frame);
+	void RunInference(cv::Mat &frame);
 
  private:
-	void InitialModel(const std::string &model_path);
+	void InitializeModel(const std::string &model_path);
 	void Preprocessing(const cv::Mat &frame);
-	void PostProcessing();
+	void PostProcessing(cv::Mat &frame);
 	cv::Rect GetBoundingBox(const cv::Rect &src) const;
+	void DrawDetectedObject(cv::Mat &frame, const Detection &detections) const;
 
-	cv::Mat resized_frame_;
-	cv::Point2f factor_;
-	cv::Size2f model_input_shape_;
-	cv::Size model_output_shape_;
+	cv::Point2f scale_factor_;			// Scaling factor for the input frame
+	cv::Size2f model_input_shape_;	// Input shape of the model
+	cv::Size model_output_shape_;		// Output shape of the model
 
-	ov::Tensor input_tensor_;
-	ov::InferRequest inference_request_;
-	ov::CompiledModel compiled_model_;
+	ov::InferRequest inference_request_;  // OpenVINO inference request
+	ov::CompiledModel compiled_model_;    // OpenVINO compiled model
 
-	std::vector<Detection> detections_;
+	float model_confidence_threshold_;  // Confidence threshold for detections
+	float model_NMS_threshold_;         // Non-Maximum Suppression threshold
 
-	float model_score_threshold_;
-	float model_NMS_threshold_;
+	std::vector<std::string> classes_ {
+		"person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light", 
+		"fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", 
+		"elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", 
+		"skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", 
+		"tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", 
+		"sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch", 
+		"potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", 
+		"cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", 
+		"scissors", "teddy bear", "hair drier", "toothbrush"
+	};
 };
-} // namespace yolov8
 
-#endif // YOLOV8_INFERENCE_H_
+} // namespace yolo
+
+#endif // YOLO_INFERENCE_H_
